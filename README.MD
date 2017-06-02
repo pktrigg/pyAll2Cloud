@@ -9,7 +9,7 @@ pyAll2Cloud
 
 Done
 ====
-
+Added travel time option
 
 2Do
 ===
@@ -21,7 +21,8 @@ Example
 
 python pyall2cloud.py
 python pyall2cloud.py -i <filename.all>  
-python pyall2cloud.py -i *.all  
+python pyall2cloud.py -i *.all
+python pyall2cloud.py -i <filename.all> -t  
 
 help
 ----
