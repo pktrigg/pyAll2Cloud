@@ -19,6 +19,7 @@ def main():
     start_time = time.time() # time the process
     parser = argparse.ArgumentParser(description='Read Kongsberg ALL file and create a point cloud file from DXYZ data.')
     parser.add_argument('-i', dest='inputFile', action='store', help='-i <ALLfilename> : input ALL filename to image. It can also be a wildcard, e.g. *.all')
+    parser.add_argument('-t', dest='travelTime', action='store_true', help='-t enable travel time mode - output two way travel time rather than depth')
 
     if len(sys.argv)==1:
         parser.print_help()
@@ -50,6 +51,13 @@ def convert(fileName):
 
     while r.moreData():
         TypeOfDatagram, datagram = r.readDatagram()
+        if (travelTime):
+            if (TypeOfDatagram == 'N'):
+                datagram.read()
+                travelTimeSwath = [0 for i in range(datagram.NumReceiveBeams)]
+                for i in range(datagram.NumReceiveBeams):
+                    travelTimeSwath[i] = datagram.TwoWayTravelTime[i]
+        
         if (TypeOfDatagram == 'X') or (TypeOfDatagram == 'D'):
             datagram.read()
             recDate = r.currentRecordDateTime()
@@ -65,7 +73,10 @@ def convert(fileName):
                     # we need to compute a vector range and bearing based on the Dx and dY
                     rng, brg = geodetic.calculateRangeBearingFromGridPosition(0,0,datagram.AcrossTrackDistance[i], datagram.AlongTrackDistance[i])
                     x,y,h = geodetic.calculateGeographicalPositionFromRangeBearing(lat, lon, brg + datagram.Heading, rng)
-                    print ("%.10f, %.10f, %.3f" % (x, y, datagram.Depth[i]))
+                    if travelTime:
+                        print ("%.10f, %.10f, %.3f" % (x, y, travelTimeSwath[i]))
+                    else:
+                        print ("%.10f, %.10f, %.3f" % (x, y, datagram.Depth[i]))
             recCount = recCount + 1
                 
     r.close()
