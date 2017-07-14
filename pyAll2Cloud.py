@@ -11,6 +11,7 @@ import pyall
 import time
 import os.path
 import warnings
+# import liblas
 
 # ignore numpy NaN warnings when applying a mask to the images.
 warnings.filterwarnings('ignore')
@@ -26,7 +27,7 @@ def main():
     
     args = parser.parse_args()
 
-    print ("processing with settings: ", args)
+    # print ("processing with settings: ", args)
     for filename in glob(args.inputFile):
         if not filename.endswith('.all'):
             print ("File %s is not a .all file, skipping..." % (filename))
@@ -58,7 +59,9 @@ def convert(fileName):
                 # interpolate so we know where the ping is located
                 lat = np.interp(recDate.timestamp(), times, latitudes, left=None, right=None)
                 lon = np.interp(recDate.timestamp(), times, longitudes, left=None, right=None)
-
+                x = 0
+                y = 0
+                
                 # for each beam in the ping, compute the real world position
                 for i in range(len(datagram.Depth)):
                     datagram.Depth[i] = datagram.Depth[i] + datagram.TransducerDepth
@@ -67,7 +70,7 @@ def convert(fileName):
                     x,y,h = geodetic.calculateGeographicalPositionFromRangeBearing(lat, lon, brg + datagram.Heading, rng)
                     print ("%.10f, %.10f, %.3f" % (x, y, datagram.Depth[i]))
             recCount = recCount + 1
-                
+
     r.close()
     print("Duration %.3fs" % (time.time() - start_time )) # time the process
 
