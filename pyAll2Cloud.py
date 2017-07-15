@@ -11,7 +11,6 @@ import pyall
 import time
 import os.path
 import warnings
-# import liblas
 
 # ignore numpy NaN warnings when applying a mask to the images.
 warnings.filterwarnings('ignore')
@@ -40,7 +39,9 @@ def convert(fileName):
     recCount = 0
 
     r = pyall.ALLReader(fileName)
+    eprint("loading navigation...")
     navigation = r.loadNavigation()
+    eprint("done.")
 
     arr = np.array(navigation)
     times = arr[:,0]
@@ -57,24 +58,22 @@ def convert(fileName):
 
             if datagram.NBeams > 1:
                 # interpolate so we know where the ping is located
-                lat = np.interp(recDate.timestamp(), times, latitudes, left=None, right=None)
-                lon = np.interp(recDate.timestamp(), times, longitudes, left=None, right=None)
-                x = 0
-                y = 0
-                
+                lat = np.interp(pyall.to_timestamp(recDate), times, latitudes, left=None, right=None)
+                lon = np.interp(pyall.to_timestamp(recDate), times, longitudes, left=None, right=None)
                 # for each beam in the ping, compute the real world position
                 for i in range(len(datagram.Depth)):
-                    datagram.Depth[i] = datagram.Depth[i] + datagram.TransducerDepth
-                    # we need to compute a vector range and bearing based on the Dx and dY
-                    rng, brg = geodetic.calculateRangeBearingFromGridPosition(0,0,datagram.AcrossTrackDistance[i], datagram.AlongTrackDistance[i])
+                    #native python version are faster than numpy
+                    brg = 90 - (180/math.pi)*math.atan2(datagram.AlongTrackDistance[i], datagram.AcrossTrackDistance[i])
+                    rng = math.sqrt((datagram.AcrossTrackDistance[i]*datagram.AcrossTrackDistance[i])+(datagram.AlongTrackDistance[i]* datagram.AlongTrackDistance[i]))
                     x,y,h = geodetic.calculateGeographicalPositionFromRangeBearing(lat, lon, brg + datagram.Heading, rng)
-                    print ("%.10f, %.10f, %.3f" % (x, y, datagram.Depth[i]))
+                    print ("%.10f, %.10f, %.3f" % (y, x, datagram.Depth[i] + datagram.TransducerDepth))
             recCount = recCount + 1
 
     r.close()
-    print("Duration %.3fs" % (time.time() - start_time )) # time the process
+    eprint("Duration %.3fs" % (time.time() - start_time )) # time the process
 
     return navigation
+
 
 def update_progress(job_title, progress):
     length = 20 # modify this to change the length
@@ -83,6 +82,9 @@ def update_progress(job_title, progress):
     if progress >= 1: msg += " DONE\r\n"
     sys.stdout.write(msg)
     sys.stdout.flush()
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 if __name__ == "__main__":
     main()
