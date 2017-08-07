@@ -95,6 +95,9 @@ def convert(fileName):
     return navigation
 
 def destinationPoint(lat1, lon1, distance, bearing, radius):
+    '''
+    http://www.movable-type.co.uk/scripts/latlong.html
+    '''
     radius = 6371000
 
     # // sinφ2 = sinlat1⋅cosangulardist + coslat1⋅sinangulardist⋅cosbearing
